@@ -1,0 +1,45 @@
+#!/bin/bash
+# check whether user had supplied -h or --help . If yes display usage
+	if [[ ( $1 == "--help") ||  $1 == "-h" ]]
+		then
+			echo
+			echo "This script will download the config.ini file for an AC GW managed in the Portal."
+			echo "Either enter the macaddr (lower case) and password (case sensitive) as CLI arguments, or you'll be prompted for them if you don't.  Win, win."
+			echo -e "\nUsage: ./ac_portal_getter [macaddr] [httpPortalPassword] \n"
+			exit 1
+	fi
+
+# if there are not 2 arugements, and they didn't ask for help, prompt for the input
+	if [ $# -lt 2 ]
+		then
+			echo
+			echo "Enter the MAC Address and Portal Device Password below."
+			echo "MAC Address must be entered in lower-case letters, please (e.g., 00908fabcdef)."
+			echo
+			read -r -p 'MAC Address: ' macaddr
+			echo
+			read -r -p 'Enter HTTP password: ' pwd
+			echo
+			echo "Thanks!  This command can accept the MAC Address and Portal Device Password as arguements, (e.g., <./ac_portal_getter $macaddr $pwd>)."
+			echo "Command usage information is available with either -h or --help flags."
+			echo
+		else
+			macaddr=$1
+			pwd=$2
+	fi
+
+# generate Authorization Header
+auth=`echo -n $macaddr:$pwd | /usr/bin/base64`
+
+# run curl command using bash "command substitution"
+# e.g., cmd=$(ls -lrt); echo $cmd
+# using echo "$cmd" preserves the new line characters and the formatting of the .ini file
+
+cmd=$(/usr/bin/curl -s -H "User-Agent: .... (SN:$macaddr)" -H "Authorization: Basic $auth" https://x.fuze.com/audiocodes/config$macaddr.ini)
+echo "$cmd" > config$macaddr.ini  # write the config to the ini file
+
+# inform the user
+echo "File <config$macaddr.ini> written to `pwd`."
+echo
+echo `ls -lrt config$macaddr.ini`
+echo
